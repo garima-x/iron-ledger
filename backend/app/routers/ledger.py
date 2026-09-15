@@ -1,4 +1,5 @@
 import json
+import threading
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,17 @@ from ..forensics import recompute_offchain_hash, is_tampered
 
 router = APIRouter(prefix="/ledger", tags=["ledger"])
 
+# Serializes block creation. Without this, two overlapping requests (a
+# double-click, a retried fetch after a slow Sepolia confirmation, two
+# browser tabs) can both read "what's the latest block?" before either has
+# committed its own — each then anchors against the same prevHash, forking
+# the chain. This was caught for real during testing, not theoretical: two
+# interleaved sequences both branched off the same block. A simple lock is
+# enough here since this is a single-process, single-narrative demo server;
+# a multi-instance deployment would need a database-level lock instead
+# (e.g. SELECT ... FOR UPDATE), which SQLite doesn't support anyway.
+_chain_lock = threading.Lock()
+
 
 def _latest_hash(db: Session) -> str:
     last = db.query(models.LedgerBlock).order_by(models.LedgerBlock.id.desc()).first()
@@ -17,21 +29,22 @@ def _latest_hash(db: Session) -> str:
 
 
 def create_block(db: Session, source: str, command: str, entity: str, params: dict) -> models.LedgerBlock:
-    prev_hash = _latest_hash(db)
-    preimage, hash_hex = compute_hash(source, command, entity, params, prev_hash)
-    tx_hash, onchain_index, anchor_error = anchor_on_chain(hash_hex, prev_hash)
+    with _chain_lock:
+        prev_hash = _latest_hash(db)
+        preimage, hash_hex = compute_hash(source, command, entity, params, prev_hash)
+        tx_hash, onchain_index, anchor_error = anchor_on_chain(hash_hex, prev_hash)
 
-    block = models.LedgerBlock(
-        source=source, command=command, entity=entity,
-        params_json=json.dumps(params),
-        prev_hash=prev_hash, onchain_hash=hash_hex, preimage=preimage,
-        tx_hash=tx_hash, onchain_index=onchain_index, anchor_error=anchor_error,
-        offchain_command=command, offchain_params_json=json.dumps(params),
-    )
-    db.add(block)
-    db.commit()
-    db.refresh(block)
-    return block
+        block = models.LedgerBlock(
+            source=source, command=command, entity=entity,
+            params_json=json.dumps(params),
+            prev_hash=prev_hash, onchain_hash=hash_hex, preimage=preimage,
+            tx_hash=tx_hash, onchain_index=onchain_index, anchor_error=anchor_error,
+            offchain_command=command, offchain_params_json=json.dumps(params),
+        )
+        db.add(block)
+        db.commit()
+        db.refresh(block)
+        return block
 
 
 def to_out(block: models.LedgerBlock) -> schemas.BlockOut:
@@ -84,6 +97,23 @@ def tamper_block(block_id: int, payload: schemas.TamperRequest, db: Session = De
 
 @router.get("/verify", response_model=schemas.VerifyResult)
 def verify_chain(db: Session = Depends(get_db)):
+    """Checks two independent things, both of which matter for a real
+    chain-of-custody claim:
+      1. Per-block tamper: does recomputing each block's hash from its
+         current off-chain fields still match what was anchored on-chain?
+      2. Chain continuity: does each block's prevHash actually equal the
+         PREVIOUS block's onchain_hash? A race condition in block creation
+         (two concurrent requests both reading the same "latest" block) can
+         silently fork the chain without tampering any individual block —
+         each block is internally consistent, but the sequence itself
+         branches. Only checking (1) would miss this entirely."""
     blocks = db.query(models.LedgerBlock).order_by(models.LedgerBlock.id).all()
-    mismatches = [b.id for b in blocks if is_tampered(b)]
+    tampered = [b.id for b in blocks if is_tampered(b)]
+
+    broken_links = []
+    for i in range(1, len(blocks)):
+        if blocks[i].prev_hash != blocks[i - 1].onchain_hash:
+            broken_links.append(blocks[i].id)
+
+    mismatches = sorted(set(tampered) | set(broken_links))
     return schemas.VerifyResult(chain_length=len(blocks), chain_verified=not mismatches, mismatches=mismatches)
