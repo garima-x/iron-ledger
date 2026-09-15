@@ -1,0 +1,80 @@
+{
+  "dataset": "HAI 20.07 (icsdataset/hai, CC BY-SA 4.0)",
+  "train_rows_normal_used_for_fit": 100000,
+  "test_rows": 444600,
+  "test_attack_rate": 0.03942195231668916,
+  "if_threshold": 0.5722802334249656,
+  "baseline_threshold_calibrated": 8.120925262381494,
+  "isolation_forest": {
+    "precision": 0.22221042573521604,
+    "recall": 0.35824727563188224,
+    "f1": 0.274287960859689,
+    "roc_auc": 0.7844915600673312,
+    "range_recall": 0.7105263157894737,
+    "n_attack_segments": 38,
+    "confusion_matrix": [
+      [
+        405095,
+        21978
+      ],
+      [
+        11248,
+        6279
+      ]
+    ]
+  },
+  "baseline_3sigma_calibrated": {
+    "precision": 0.7695496213630929,
+    "recall": 0.5508073258401324,
+    "f1": 0.6420590582601756,
+    "roc_auc": 0.8401617151603958,
+    "range_recall": 0.9210526315789473,
+    "n_attack_segments": 38,
+    "confusion_matrix": [
+      [
+        424182,
+        2891
+      ],
+      [
+        7873,
+        9654
+      ]
+    ]
+  },
+  "baseline_3sigma_naive": {
+    "precision": 0.058086426091354726,
+    "recall": 0.8714554687054259,
+    "f1": 0.10891329150028523,
+    "roc_auc": 0.8401617151603958,
+    "range_recall": 1.0,
+    "n_attack_segments": 38,
+    "confusion_matrix": [
+      [
+        179394,
+        247679
+      ],
+      [
+        2253,
+        15274
+      ]
+    ]
+  },
+  "dual_layer_combined": {
+    "precision": 0.3049292756108015,
+    "recall": 0.6088320876362184,
+    "f1": 0.40634400822512473,
+    "roc_auc": 0.7848353477695975,
+    "range_recall": 0.9473684210526315,
+    "n_attack_segments": 38,
+    "confusion_matrix": [
+      [
+        402749,
+        24324
+      ],
+      [
+        6856,
+        10671
+      ]
+    ]
+  }
+}
