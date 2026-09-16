@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IronLedger — Blockchain-Anchored ICS Forensics</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 2L28 8V16C28 23 22.6 28.7 16 30C9.4 28.7 4 23 4 16V8L16 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M11 16L14.5 19.5L21.5 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">IronLedger</span>
+        <span class="brand-sub">ICS Forensics Framework</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="ledger">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="8" width="14" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="13" width="14" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        <span>Ledger Explorer</span>
+      </button>
+      <button class="nav-item" data-view="anomaly">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M10 2L18 17H2L10 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14" r="0.8" fill="currentColor"/></svg>
+        <span>Anomaly Detection</span>
+      </button>
+      <button class="nav-item" data-view="forensics">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="5" cy="4" r="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="5" cy="10" r="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="5" cy="16" r="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M5 5.6V8.4M5 11.6V14.4" stroke="currentColor" stroke-width="1.4"/><path d="M8 4H16M8 16H16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Forensic Timeline</span>
+      </button>
+      <button class="nav-item" data-view="mitre">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="15" height="15" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 8H17.5M7 2.5V17.5M12 2.5V17.5" stroke="currentColor" stroke-width="1.1"/></svg>
+        <span>ATT&amp;CK Matrix</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="chain-status" id="chain-status">
+        <span class="dot dot-safe"></span>
+        <div>
+          <div class="chain-status-label">Chain Integrity</div>
+          <div class="chain-status-value" id="chain-status-value">Connecting…</div>
+        </div>
+      </div>
+      <div class="api-config">
+        <label for="api-base-input">API base</label>
+        <div class="api-config-row">
+          <input id="api-base-input" type="text" value="http://localhost:8000" spellcheck="false">
+          <button id="api-connect-btn" title="Reconnect">↻</button>
+        </div>
+        <div class="api-config-status" id="api-config-status">connecting…</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="conn-banner hidden" id="conn-banner">
+      <span id="conn-banner-text">Can't reach the IronLedger API.</span>
+      <button id="conn-banner-retry">Retry</button>
+    </div>
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="page-title">Home</h1>
+        <p id="page-sub">Live posture of the operational technology network</p>
+      </div>
+
+      <div class="act-stepper" id="act-stepper">
+        <span class="act-stepper-label">Simulation</span>
+        <button class="act-btn" data-act="1"><span class="act-num">1</span>Baseline</button>
+        <button class="act-btn" data-act="2"><span class="act-num">2</span>Attack Injection</button>
+        <button class="act-btn" data-act="3"><span class="act-num">3</span>Log Tampering</button>
+        <button class="act-btn" data-act="4"><span class="act-num">4</span>Reconstruct</button>
+        <button class="act-reset" id="act-reset" title="Reset simulation">Reset</button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- DASHBOARD -->
+      <section class="view active" id="view-dashboard">
+        <div class="grid grid-stats">
+          <div class="card stat-card">
+            <span class="stat-label">Reactor Pressure</span>
+            <span class="stat-value" id="stat-pressure">6.1 <small>bar</small></span>
+            <div class="stat-bar"><div class="stat-bar-fill" id="stat-pressure-bar"></div></div>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-label">Process Temperature</span>
+            <span class="stat-value" id="stat-temp">71 <small>°C</small></span>
+            <div class="stat-bar"><div class="stat-bar-fill" id="stat-temp-bar"></div></div>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-label">Rotor Vibration</span>
+            <span class="stat-value" id="stat-vibe">2.3 <small>mm/s</small></span>
+            <div class="stat-bar"><div class="stat-bar-fill" id="stat-vibe-bar"></div></div>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-label">ML Anomaly Score</span>
+            <span class="stat-value" id="stat-ml">0.08</span>
+            <div class="stat-bar"><div class="stat-bar-fill" id="stat-ml-bar"></div></div>
+          </div>
+        </div>
+
+        <div class="grid grid-main">
+          <div class="card telemetry-card">
+            <div class="card-head">
+              <h2>Monitoring Overview</h2>
+              <span class="legend"><i class="sw sw-navy"></i>Pressure <i class="sw sw-blush"></i>Temperature</span>
+            </div>
+            <svg id="telemetry-chart" viewBox="0 0 560 200" class="telemetry-svg"></svg>
+          </div>
+
+          <div class="card events-card">
+            <div class="card-head">
+              <h2>Recent Ledger Entries</h2>
+            </div>
+            <ul class="event-list" id="recent-events"></ul>
+          </div>
+        </div>
+
+        <div class="grid grid-lower">
+          <div class="card summary-card">
+            <div class="card-head"><h2>Safety Instrumented System</h2></div>
+            <div class="sis-row"><span>SIS Interlock</span><span class="badge" id="sis-interlock">Armed</span></div>
+            <div class="sis-row"><span>Vent Relief Valve</span><span class="badge" id="sis-valve">Open</span></div>
+            <div class="sis-row"><span>Active Blocks Anchored</span><span class="badge badge-plain" id="sis-blocks">0</span></div>
+          </div>
+          <div class="card summary-card">
+            <div class="card-head"><h2>Active Alerts</h2></div>
+            <ul class="alert-list" id="alert-list">
+              <li class="alert-empty">No anomalies flagged. Baseline nominal.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEDGER EXPLORER -->
+      <section class="view" id="view-ledger">
+        <div class="card">
+          <div class="card-head">
+            <h2>On-Chain Evidence Ledger</h2>
+            <span class="hint">H(source, command, entity, params, prevHash) — Ethereum Sepolia (simulated)</span>
+          </div>
+          <div class="table-wrap">
+            <table class="ledger-table">
+              <thead>
+                <tr><th>#</th><th>Timestamp</th><th>Source</th><th>Command / Entity</th><th>Prev Hash</th><th>Block Hash</th><th>Status</th></tr>
+              </thead>
+              <tbody id="ledger-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card detail-card" id="block-detail">
+          <div class="card-head"><h2>Block Detail</h2></div>
+          <p class="hint" id="block-detail-empty">Select a block to inspect its hash derivation and chain-of-custody.</p>
+          <div id="block-detail-body" class="hidden"></div>
+        </div>
+      </section>
+
+      <!-- ANOMALY DETECTION -->
+      <section class="view" id="view-anomaly">
+        <div class="grid grid-anomaly-top">
+          <div class="card gauge-card">
+            <div class="card-head"><h2>Isolation Forest Score</h2></div>
+            <svg viewBox="0 0 200 120" class="gauge-svg" id="ml-gauge"></svg>
+            <p class="gauge-caption" id="ml-gauge-caption">Nominal — trained on baseline telemetry</p>
+          </div>
+          <div class="card thresholds-card">
+            <div class="card-head"><h2>Physics Envelope Thresholds</h2></div>
+            <table class="threshold-table">
+              <thead><tr><th>Parameter</th><th>Safe Envelope</th><th>Current</th><th>State</th></tr></thead>
+              <tbody id="threshold-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Flagged Anomalies</h2></div>
+          <ul class="anomaly-list" id="anomaly-list">
+            <li class="alert-empty">No anomalies flagged yet — run the simulation stepper above.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- FORENSIC TIMELINE -->
+      <section class="view" id="view-forensics">
+        <div class="grid grid-forensics">
+          <div class="card">
+            <div class="card-head">
+              <h2>Backward-Walk Reconstruction</h2>
+              <span class="hint">Traversal from anomaly trigger to root-cause entry</span>
+            </div>
+            <ol class="timeline" id="forensic-timeline">
+              <li class="alert-empty">Run Act 4 to reconstruct the incident timeline.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Threat Attribution</h2></div>
+            <div class="attribution-list" id="attribution-list"></div>
+            <button class="report-btn" id="report-btn" disabled>Generate Court-Ready Report</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- MITRE MATRIX -->
+      <section class="view" id="view-mitre">
+        <div class="card">
+          <div class="card-head">
+            <h2>MITRE ATT&amp;CK for ICS</h2>
+            <span class="hint" id="mitre-coverage-hint">Full framework — techniques observed in this incident highlighted in context</span>
+          </div>
+          <div class="mitre-matrix-scroll">
+            <div class="mitre-matrix" id="mitre-matrix"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
